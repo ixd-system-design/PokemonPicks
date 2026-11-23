@@ -1,4 +1,5 @@
 [build]
+  # Netlify serves the frontend from public and deploys the API functions separately.
   publish = "public"
   functions = "netlify/functions"
 

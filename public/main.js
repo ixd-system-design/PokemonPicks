@@ -2,44 +2,39 @@ import { createNavigation } from './navigation.js';
 import { createListings } from './listings.js';
 import { getFavourites, toggleFavorite } from './favourites.js';
 
-// Handle favorite button clicks 
+// One click handler covers favourite buttons added later by the renderer.
 document.addEventListener('click', (e) => {
   const favoriteBtn = e.target.closest('.favorite')
   if (favoriteBtn) {
-    const { pokemonName, pokemonUrl } = favoriteBtn.dataset
-    toggleFavorite(pokemonName, pokemonUrl)
+    toggleFavorite(favoriteBtn.dataset)
   }
 })
 
-// Fetch favourites from our API 
+// Load favourites before rendering so the heart icons start in the right state.
 const favourites = await getFavourites()
 console.log('Favourites', favourites)
 
-// fetch a simple list of all pokemon types (fighting, flying, etc.)
-// This only includes the name and url for each.
+// PokeAPI's type index gives us the URL for each type's details.
 const response = await fetch('https://pokeapi.co/api/v2/type/?limit=100')
 const json = await response.json()
 
 console.log('List of Pokemon Types', json.results)
 
-// Let's get more details for each of the types of pokemon
-// this will include a list of member pokemon for each type  
-// note the use of Promise.all to fetch all at once
+// Fetch type details in parallel and unwrap each member for the listing renderer.
 const pokemonTypes = await Promise.all(
   json.results.map(async (pokemonType) => {
     const data = await fetch(pokemonType.url)
-    return data.json()
+    const { name, pokemon } = await data.json()
+    return { name, pokemon: pokemon.map(entry => entry.pokemon) }
   })
 )
 console.log('Pokemon Types with Details', pokemonTypes)
 
-// Now we can build the navigation menu and listings for each type
 createNavigation(pokemonTypes)
 
-// Create listings for each pokemon type (filter out empty types)
 pokemonTypes
   .filter(pokemonType => pokemonType.pokemon.length > 0)
-  .forEach(pokemonType => createListings(pokemonType))
+  .forEach(({ name, pokemon }) => createListings(name, pokemon))
 
 
 

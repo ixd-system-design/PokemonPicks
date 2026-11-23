@@ -1,29 +1,21 @@
 import { createProfile } from './profile.js';
 import { isFavourite } from './favourites.js';
 
-// create a listing for a single pokemon item
-const createListing = (pokemon, pokemonType) => {
+// Build a Pokémon card with a favourite button and a profile popover.
+const createListing = (pokemon, sectionName) => {
   console.log(pokemon)
-  // get the ID from the URL for this pokemon
-  // e.g. 25 from https://pokeapi.co/api/v2/pokemon/25/
+  // The numeric segment of the PokeAPI URL also identifies the sprite.
   const id = pokemon.url.split('/').filter(e => Number(e)).pop()
-  // Skip any pokemon with an ID > 10000 
-  // NOTE: these IDs are alternate forms that often lack images
+  // Skip alternate forms with IDs above 10000 because their sprites are often missing.
   if (id > 10000) return null
-  // get a sprite icon directly from GitHub based on the ID  
   const iconURL = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`
-  // assign a unique ID to the popover 
-  // include the name of the pokemonType in the popoverId
-  // to account for pokemon possibly having multiple types
-  const popoverId = `${pokemonType.name}-${pokemon.name}`
+  // Include the section name because a Pokémon can appear in multiple sections.
+  const popoverId = `${sectionName}-${pokemon.name}`
   const heartIcon = isFavourite(pokemon.name) ?
     'heart-fill.svg' : 'heart-outline.svg'
-  // make a div / template for each listing. 
   const div = document.createElement('div')
   div.classList.add('listing')
   div.classList.add(`listing-${pokemon.name}`)
-  // the template includes a button to open the popover
-  // as well as a favorite button icon (no count)
   let template =
     `<div class="listing-buttons">
       <button class="openButton" popoverTarget="${popoverId}" >
@@ -42,8 +34,7 @@ const createListing = (pokemon, pokemonType) => {
     </div>`
   div.innerHTML = DOMPurify.sanitize(template)
 
-  // when the popover is opened, fetch details and build a profile
-  // we only do this when opened to avoid excessive API calls 
+  // Fetch the full profile only when someone opens the popover.
   div.querySelector(`#${popoverId}`)
     .addEventListener('toggle', async (event) => {
       if (event.newState == 'open') {
@@ -57,22 +48,18 @@ const createListing = (pokemon, pokemonType) => {
 }
 
 
-// Create all pokemon listings for a given pokemon type
-// We receive a pokemon type with a list of its members
-const createListings = (pokemonType) => {
-  // get existing section or create a new one if necessary
-  let section = document.querySelector(`section.${pokemonType.name}`)
+// Render the Pokémon in a type or favourites section.
+const createListings = (sectionName, pokemonList) => {
+  let section = document.querySelector(`section.${sectionName}`)
   if (!section) {
     section = document.createElement('section')
-    section.classList.add(pokemonType.name)
+    section.classList.add(sectionName)
     document.querySelector('main').appendChild(section)
   }
   section.innerHTML = ''
 
-  // Iterate over the list of members for this type. 
-  // Members live inside a nested "pokemon" array 
-  pokemonType.pokemon.forEach(item => {
-    const div = createListing(item.pokemon, pokemonType)
+  pokemonList.forEach(pokemon => {
+    const div = createListing(pokemon, sectionName)
     if (div) {
       section.appendChild(div)
     }

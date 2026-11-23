@@ -99,6 +99,7 @@ button:hover {
 }
 
 
+/* Navigation adds .active to show the selected section as a grid. */
 section {
   display: none;
   padding: 1rem;

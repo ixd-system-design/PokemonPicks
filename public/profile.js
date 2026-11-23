@@ -1,10 +1,6 @@
 import { isFavourite } from './favourites.js'
 
-// For the Full profile, we may like to control which image to show
-// there are lots of images available. (take a look at the JSON in the console for details)
-// I will use the "dream_world" image here by default, as it is a nice vector image,
-// if not available we will use in order: dream_world, home, or just the ordinary pokeball.
-
+// Pick the first available artwork, with the local Poké Ball as a fallback.
 const getProfileImageURL = (pokemon) => {
   const dream_world = pokemon.sprites?.other?.['dream_world']?.front_default
   const official = pokemon.sprites?.other?.['official-artwork']?.front_default
@@ -12,20 +8,14 @@ const getProfileImageURL = (pokemon) => {
   return dream_world || official || home || 'pokeball.svg'
 }
 
-// Given the URL for a single pokemon, fetch details from the API
-// and build a profile for the pokemon. 
-// this includes a template populated with details 
-// it also includes a close button.
+// Fetch one Pokémon from PokeAPI and return the HTML for its detail popover.
 const createProfile = async (popoverId, url, pokemonName) => {
   const data = await fetch(url)
   const pokemon = await data.json()
   const imageURL = getProfileImageURL(pokemon)
 
-  // Use existing isFavourite() function instead of separate API call
-
   const heartIcon = isFavourite(pokemonName) ? 'heart-fill.svg' : 'heart-outline.svg'
 
-  // build a template to hold details for this pokemon 
   const template = ` 
   <div class="profile">
     <button class="close" popovertarget="${popoverId}"  >Close</button>

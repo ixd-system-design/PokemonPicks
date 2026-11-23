@@ -2,6 +2,7 @@ import mongoose from 'mongoose'
 
 let connectionPromise
 
+// Reuse an open connection and share one connection attempt across simultaneous requests.
 export async function connectDatabase() {
     if (mongoose.connection.readyState === 1) return
 

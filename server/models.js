@@ -1,9 +1,9 @@
 import mongoose from 'mongoose'
 
+// Use the canonical PokeAPI name to keep one favourite per Pokémon.
 const favouriteSchema = new mongoose.Schema({
-    pokemon_id: { type: Number, required: true, unique: true, min: 1, validate: Number.isSafeInteger },
-    pokemon_name: { type: String, required: true },
-    pokemon_url: { type: String, required: true }
-}, { collection: 'favourites', versionKey: false })
+    name: { type: String, required: true, unique: true },
+    url: { type: String, required: true }
+}, { collection: 'favourite_pokemon', versionKey: false })
 
 export const Favourite = mongoose.models.Favourite || mongoose.model('Favourite', favouriteSchema)
