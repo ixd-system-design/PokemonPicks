@@ -6,12 +6,13 @@ let favourites = {
 // Fetch the latest favourites from the API
 const getFavourites = async () => {
     try {
-        const response = await fetch('/data')
+        const response = await fetch('/api/favourites')
+        if (!response.ok) throw new Error(`Favourites request failed (${response.status})`)
         const items = await response.json()
         favourites = {
             name: 'favourites',
-            pokemon: items.map(item => ({
-                pokemon: item.data
+            pokemon: items.map(({ pokemon_name, pokemon_url }) => ({
+                pokemon: { name: pokemon_name, url: pokemon_url }
             }))
         }
         return favourites
@@ -23,33 +24,27 @@ const getFavourites = async () => {
 
 // Shared toggle functionality for adding/removing Pokemon from collection
 const toggleFavorite = async (pokemonName, pokemonUrl) => {
+    const hearts = document
+        .querySelectorAll(`.favorite[data-pokemon-name="${pokemonName}"] .heart`)
+
+    hearts.forEach(heart => heart.classList.add('loading'))
+
     try {
-        // find all hearts for this pokemon
-        let hearts = document
-            .querySelectorAll(`.favorite[data-pokemon-name="${pokemonName}"] .heart`)
-
-        //Add loading spinner animation to hearts
-        hearts.forEach(heart => heart.classList.add('loading'))
-
         // Send pokemon data (just name and url)
-        const response = await fetch('/data', {
+        const response = await fetch('/api/favourite', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                name: pokemonName,
-                url: pokemonUrl
+                pokemon_name: pokemonName,
+                pokemon_url: pokemonUrl
             })
         })
+        if (!response.ok) throw new Error(`Favourites request failed (${response.status})`)
         const result = await response.json()
 
         // Update favourites state based on action
         if (result.action === 'added') {
-            favourites.pokemon.push({
-                pokemon: {
-                    name: pokemonName,
-                    url: pokemonUrl
-                }
-            })
+            favourites.pokemon.push({ pokemon: { name: pokemonName, url: pokemonUrl } })
         } else {
             favourites.pokemon = favourites.pokemon.filter(
                 item => item.pokemon.name !== pokemonName
@@ -60,17 +55,13 @@ const toggleFavorite = async (pokemonName, pokemonUrl) => {
         // Update UI based on action  for all hearts 
         hearts.forEach(heart => {
             heart.src = result.action === 'added' ? 'heart-fill.svg' : 'heart-outline.svg'
-            heart.classList.remove('loading')
         })
 
-
         return result
-
     } catch (err) {
         console.error('Failed to toggle favorite:', err)
-        // Remove loading state on error
+    } finally {
         hearts.forEach(heart => heart.classList.remove('loading'))
-        throw err
     }
 }
 

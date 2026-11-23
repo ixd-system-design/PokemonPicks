@@ -80,13 +80,12 @@ typings/
 
 # Serverless directories
 .serverless/
+.netlify/
 
 # FuseBox cache
 .fusebox/
 
 #DynamoDB Local files 
 .dynamodb/ 
-
-/generated/prisma
 
 .vscode
