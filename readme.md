@@ -14,10 +14,17 @@ Import this repository into Netlify. The included `netlify.toml` sets the publis
 
 Mongoose stores favourites in the `favourite_pokemon` collection with a generated MongoDB `_id`, a unique canonical PokeAPI `name`, and a detail `url` for listings and profiles. The app also accepts `DATABASE_URL` when `MONGODB_URI` is unset.
 
+## Follow a favourite click
+
+1. Click Pikachu's heart. `public/main.js` passes the button's Pokémon name and URL to `public/favourites.js`.
+2. If Pikachu is absent from the loaded favourites, the browser sends `PUT /api/favourite?name=pikachu` with its detail URL. If Pikachu is already saved, it sends `DELETE /api/favourite?name=pikachu`.
+3. `netlify/functions/favourite.js` uses Mongoose to save or remove Pikachu by name. Once the request succeeds, `public/favourites.js` updates its list and every visible Pikachu heart.
+
 ## Favourites API
 
 | Method and path | Result |
 | --- | --- |
 | `GET /api/favourites` | Lists favourites as `{ name, url }` items, sorted by Pokémon name. |
-| `POST /api/favourite` | Toggles a favourite by canonical PokeAPI name using `{ name, url }`. Returns `{ action: 'added', item }` with status 201 or `{ action: 'removed' }` with status 200. |
-| `GET /api/favourite?name=pikachu` | Looks up a favourite by PokeAPI name. Returns `{ exists, item }` with `item: null` when the Pokémon is absent. |
+| `GET /api/favourite?name=pikachu` | Looks up a favourite by PokeAPI name. Returns `{ name, url }` or `null` if it is absent. |
+| `PUT /api/favourite?name=pikachu` | Saves a favourite with a JSON body containing `url`. Returns `{ name, url }` with status 201 on creation or 200 on update. |
+| `DELETE /api/favourite?name=pikachu` | Removes the favourite if present and returns 204 with an empty body. |

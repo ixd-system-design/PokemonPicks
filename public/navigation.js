@@ -21,11 +21,9 @@ const createNavItem = (name) => {
   document.querySelector('nav').appendChild(button)
 }
 
-// Add tabs for types that have Pokémon, followed by the Favourites tab.
+// Add a tab for each supplied type, followed by the Favourites tab.
 const createNavigation = (pokemonTypes) => {
-  pokemonTypes
-    .filter(pokemonType => pokemonType.pokemon.length > 0)
-    .forEach(pokemonType => createNavItem(pokemonType.name))
+  pokemonTypes.forEach(({ name }) => createNavItem(name))
 
   createNavItem('favourites')
 }

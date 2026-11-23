@@ -3,55 +3,52 @@ import { Favourite } from '../../server/models.js'
 
 export const config = { path: '/api/favourite' }
 
-// GET looks up a favourite by its PokeAPI name. POST adds or removes it.
+// Use the PokeAPI name to look up, save, or remove a favourite.
 export default async (request) => {
-    if (request.method === 'GET') {
-        const name = new URL(request.url).searchParams.get('name')
+    const name = new URL(request.url).searchParams.get('name')
+    await connectDatabase()
 
+    if (request.method === 'GET') {
         try {
-            await connectDatabase()
             const item = await Favourite.findOne({ name }).select('name url -_id').lean()
-            return Response.json({ exists: Boolean(item), item })
+            return Response.json(item)
         } catch (error) {
             console.error('GET /api/favourite failed:', error.name)
             return Response.json({ error: 'Failed to fetch item' }, { status: 500 })
         }
     }
 
-    if (request.method === 'POST') {
+    if (request.method === 'PUT') {
         try {
-            const { name, url } = (await request.json()) ?? {}
-            if (typeof name !== 'string' || !name) {
-                return Response.json({ error: 'Provide a Pokémon name.' }, { status: 400 })
-            }
-
-            await connectDatabase()
-            // Wait for the unique name index before accepting writes.
-            await Favourite.init()
-
-            // If another request saves this Pokémon first, retry the toggle.
-            while (true) {
-                const { deletedCount } = await Favourite.deleteOne({ name })
-                if (deletedCount > 0) {
-                    return Response.json({ action: 'removed' })
-                }
-
-                try {
-                    const item = { name, url }
-                    await Favourite.create(item)
-                    return Response.json({ action: 'added', item }, { status: 201 })
-                } catch (error) {
-                    if (error.code !== 11000 || !error.keyPattern?.name) throw error
-                }
-            }
+            const { url } = (await request.json()) ?? {}
+            const item = await Favourite.validate({ name, url })
+            await Favourite.init() // Wait for the unique name index.
+            const { upsertedCount } = await Favourite.updateOne({ name }, { $set: { url: item.url } }, { upsert: true })
+            return Response.json(item, { status: upsertedCount ? 201 : 200 })
         } catch (error) {
-            console.error('POST /api/favourite failed:', error.name)
-            return Response.json({ error: 'Failed to toggle item' }, { status: 500 })
+            if (error instanceof SyntaxError) {
+                return Response.json({ error: 'Invalid JSON body.' }, { status: 400 })
+            }
+            if (error.name === 'ValidationError') {
+                return Response.json({ error: 'Provide a valid Pokémon name and PokeAPI detail URL.' }, { status: 400 })
+            }
+            console.error('PUT /api/favourite failed:', error.name)
+            return Response.json({ error: 'Failed to save favourite' }, { status: 500 })
+        }
+    }
+
+    if (request.method === 'DELETE') {  
+        try {
+            await Favourite.deleteOne({ name })
+            return new Response(null, { status: 204 })
+        } catch (error) {
+            console.error('DELETE /api/favourite failed:', error.name)
+            return Response.json({ error: 'Failed to remove favourite' }, { status: 500 })
         }
     }
 
     return Response.json({ error: 'Method not allowed' }, {
         status: 405,
-        headers: { Allow: 'GET, POST' }
+        headers: { Allow: 'GET, PUT, DELETE' }
     })
 }

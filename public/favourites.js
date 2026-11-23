@@ -13,36 +13,35 @@ const getFavourites = async () => {
     }
 }
 
-// Ask the server to toggle a favourite, then update every visible copy of its heart.
+// Save or remove a favourite, then update every visible copy of its heart.
 const toggleFavorite = async ({ pokemonName, pokemonUrl }) => {
+    const wasFavourite = isFavourite(pokemonName)
+    const query = new URLSearchParams({ name: pokemonName })
     const hearts = document
         .querySelectorAll(`.favorite[data-pokemon-name="${pokemonName}"] .heart`)
 
     hearts.forEach(heart => heart.classList.add('loading'))
 
     try {
-        const response = await fetch('/api/favourite', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                name: pokemonName,
-                url: pokemonUrl
-            })
-        })
-        if (!response.ok) throw new Error(`Favourites request failed (${response.status})`)
-        const result = await response.json()
+        const options = { method: wasFavourite ? 'DELETE' : 'PUT' }
+        if (!wasFavourite) {
+            options.headers = { 'Content-Type': 'application/json' }
+            options.body = JSON.stringify({ url: pokemonUrl })
+        }
 
-        if (result.action === 'added') {
-            favourites.push(result.item)
-        } else {
+        const response = await fetch(`/api/favourite?${query}`, options)
+        if (!response.ok) throw new Error(`Favourites request failed (${response.status})`)
+
+        if (wasFavourite) {
             favourites = favourites.filter(pokemon => pokemon.name !== pokemonName)
             document.querySelector(`section.favourites .listing-${pokemonName}`)?.remove()
+        } else {
+            const item = await response.json()
+            if (!isFavourite(pokemonName)) favourites.push(item)
         }
         hearts.forEach(heart => {
-            heart.src = result.action === 'added' ? 'heart-fill.svg' : 'heart-outline.svg'
+            heart.src = wasFavourite ? 'heart-outline.svg' : 'heart-fill.svg'
         })
-
-        return result
     } catch (err) {
         console.error('Failed to toggle favorite:', err)
     } finally {

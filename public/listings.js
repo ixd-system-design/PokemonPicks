@@ -3,7 +3,6 @@ import { isFavourite } from './favourites.js';
 
 // Build a Pokémon card with a favourite button and a profile popover.
 const createListing = (pokemon, sectionName) => {
-  console.log(pokemon)
   // The numeric segment of the PokeAPI URL also identifies the sprite.
   const id = pokemon.url.split('/').filter(e => Number(e)).pop()
   // Skip alternate forms with IDs above 10000 because their sprites are often missing.
